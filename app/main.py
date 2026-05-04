@@ -8,7 +8,7 @@ app = FastAPI(title="MS Users Report")
 app.add_middleware(TokenAuthMiddleware)
 
 # Inclusión de rutas
-app.include_router(export_routes.router, prefix="/api/v1")
+app.include_router(export_routes.router)
 
 @app.get("/health")
 def health_check():
