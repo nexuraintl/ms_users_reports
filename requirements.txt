@@ -4,5 +4,6 @@ pandas
 openpyxl
 sqlalchemy
 pymysql
-cryptography
 python-dotenv
+google-auth
+requests
