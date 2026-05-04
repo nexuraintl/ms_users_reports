@@ -10,5 +10,5 @@ def get_client_engine(creds: dict):
     Crea un motor de base de datos dinámico para el cliente.
     creds: dict con user, pass, host, name
     """
-    url = f"mysql+pymysql://{creds['user']}:{creds['pass']}@{creds['host']}/{creds['db_name']}"
+    url = f"mysql+pymysql://{creds['user']}:{creds['pass']}@{creds['host']}:{creds['port']}/{creds['db_name']}"
     return create_engine(url)

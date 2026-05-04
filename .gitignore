@@ -1,0 +1,27 @@
+# Entornos Virtuales
+venv/
+.venv/
+env/
+bin/
+lib/
+include/
+
+# Variables de Entorno (¡CRÍTICO NO SUBIR!)
+.env
+.flaskenv
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# IDEs
+.vscode/
+.idea/
+
+# Archivos temporales de Excel generados localmente
+*.xlsx
+*.xls
+*.csv
+
+# Logs de GCP / Cloud Run local
+.gcloud/
