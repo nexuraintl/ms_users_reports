@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copiar requerimientos y el archivo con doble 's' como está en tu captura
 COPY requirementss.txt .
-RUN pip install --no-cache-dir -r requirementss.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar el resto del código
 COPY . .
