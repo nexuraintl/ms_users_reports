@@ -1,51 +1,63 @@
 import pandas as pd
 import io
+import logging
+from sqlalchemy import text
 from app.models.db_config import get_client_engine
 
-def generate_users_report(creds: dict):
-    # 1. Crear motor dinámico para la base de datos del cliente
+logger = logging.getLogger(__name__)
+
+# Columnas que se extraen explícitamente — sin SELECT *
+COLUMNS_TO_SELECT = [
+    "id", "nombre", "login", "tipo_doc", "identificacion",
+    "email", "direccion", "telefono", "pais", "departamento",
+    "ciudad", "tipo", "estado", "tipo_wf",
+]
+
+COLUMN_MAPPING = {
+    "id":             "ID Registro",
+    "nombre":         "Nombre",
+    "login":          "Login",
+    "tipo_doc":       "Tipo de identificación",
+    "identificacion": "Número de identificación",
+    "email":          "E-mail",
+    "direccion":      "Dirección",
+    "telefono":       "Teléfono",
+    "pais":           "País",
+    "departamento":   "Departamento",
+    "ciudad":         "Municipio",
+    "tipo":           "Tipo",
+    "estado":         "Estado",
+    "tipo_wf":        "Tipo de registro",
+}
+
+
+def generate_users_report(creds: dict) -> io.BytesIO:
     engine = get_client_engine(creds)
-    
-    # 2. Query a la tabla real corregida
-    query = "SELECT * FROM tn_user_lst"
-    
-    # 3. Lectura de datos
-    df = pd.read_sql(query, engine)
-    
-    # 4. Mapeo exacto basado en la estructura tn_user_lst proporcionada
-    column_mapping = {
-        'id': 'ID Registro',
-        'nombre': 'Nombre',
-        'login': 'Login',
-        'tipo_doc': 'Tipo de identificación',
-        'identificacion': 'Número de identificación',
-        'email': 'E-mail',
-        'direccion': 'Dirección',
-        'telefono': 'Teléfono',
-        'pais': 'País',
-        'departamento': 'Departamento',
-        'ciudad': 'Municipio',
-        'tipo': 'Tipo',
-        'estado': 'Estado',
-        'tipo_wf': 'Tipo de registro'
-    }
 
-    # Opcional: Transformar 'estado' de 1/0 a texto (quitar comentario si se desea)
-    # df['estado'] = df['estado'].map({'1': 'Activo', '0': 'Inactivo', 1: 'Activo', 0: 'Inactivo'})
+    try:
+        cols_sql = ", ".join(COLUMNS_TO_SELECT)
+        query = text(f"SELECT {cols_sql} FROM tn_user_lst")
 
-    # 5. Renombrar columnas
-    # Usamos .reindex para asegurar que las columnas salgan en el orden exacto solicitado
-    # y manejamos solo las columnas definidas en el mapeo
-    df_final = df.rename(columns=column_mapping)
-    
-    # Seleccionamos solo las columnas resultantes del mapeo en el orden deseado
-    columnas_finales = list(column_mapping.values())
-    df_final = df_final[columnas_finales]
-    
-    # 6. Escribir a buffer de memoria (Excel .xlsx)
+        with engine.connect() as conn:
+            df = pd.read_sql(query, conn)
+
+    except Exception as e:
+        logger.error(f"Error consultando tn_user_lst para host {creds.get('host')}: {str(e)}")
+        raise
+    finally:
+        # Garantiza cierre de conexiones independientemente del resultado
+        engine.dispose()
+
+    # Validar que las columnas esperadas estén presentes antes de renombrar
+    missing_cols = [c for c in COLUMNS_TO_SELECT if c not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Columnas faltantes en tn_user_lst: {missing_cols}")
+
+    df_final = df.rename(columns=COLUMN_MAPPING)[list(COLUMN_MAPPING.values())]
+
     output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_final.to_excel(writer, index=False, sheet_name='Usuarios')
-    
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df_final.to_excel(writer, index=False, sheet_name="Usuarios")
+
     output.seek(0)
     return output

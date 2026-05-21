@@ -1,16 +1,39 @@
+import json
+import logging
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.services.auth_service import AuthService
+from starlette.responses import Response
+from app.services.auth_service import AuthService, TokenInvalidoError, TokenVerificationError
+
+logger = logging.getLogger(__name__)
+
+# Rutas que no requieren autenticación
+RUTAS_PUBLICAS = {"/health"}
+
 
 class TokenAuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        # 1. Extraer parámetros de la URL
-        token = request.query_params.get("token")
-        
-        # 2. Validar token usando la lógica de Google
-        # Si falla, el método lanza HTTPException (401 o 500)
-        AuthService.validar_access_token_google(token)
+    async def dispatch(self, request: Request, call_next) -> Response:
+        # Excluir rutas públicas sin tocar el token
+        if request.url.path in RUTAS_PUBLICAS:
+            return await call_next(request)
 
-        # 3. Continuar si es válido
-        response = await call_next(request)
-        return response
+        token = request.query_params.get("token")
+
+        try:
+            AuthService.validar_access_token_google(token)
+        except TokenInvalidoError as e:
+            logger.warning(f"Acceso denegado [{request.url.path}]: {str(e)}")
+            return Response(
+                content=json.dumps({"detail": "Acceso denegado: Token inválido o expirado."}),
+                status_code=401,
+                media_type="application/json"
+            )
+        except TokenVerificationError as e:
+            logger.error(f"Error de verificación [{request.url.path}]: {str(e)}")
+            return Response(
+                content=json.dumps({"detail": "Error interno al validar la identidad."}),
+                status_code=500,
+                media_type="application/json"
+            )
+
+        return await call_next(request)
