@@ -31,15 +31,22 @@ COLUMN_MAPPING = {
 }
 
 
-def generate_users_report(creds: dict) -> io.BytesIO:
+def generate_users_report(creds: dict, letra: str = "Todos") -> io.BytesIO:
     engine = get_client_engine(creds)
 
     try:
         cols_sql = ", ".join(COLUMNS_TO_SELECT)
-        query = text(f"SELECT {cols_sql} FROM tn_user_lst")
+
+        if letra == "Todos":
+            query = text(f"SELECT {cols_sql} FROM tn_user_lst")
+            params = {}
+        else:
+            # LIKE es case-insensitive en MySQL con collation utf8_general_ci (default)
+            query = text(f"SELECT {cols_sql} FROM tn_user_lst WHERE login LIKE :patron")
+            params = {"patron": f"{letra}%"}
 
         with engine.connect() as conn:
-            df = pd.read_sql(query, conn)
+            df = pd.read_sql(query, conn, params=params if params else None)
 
     except Exception as e:
         logger.error(f"Error consultando tn_user_lst para host {creds.get('host')}: {str(e)}")

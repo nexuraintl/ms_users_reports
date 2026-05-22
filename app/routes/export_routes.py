@@ -8,21 +8,47 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+LETRAS_VALIDAS = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+
+def _validar_letra(letra: str) -> str:
+    """
+    Normaliza y valida el parámetro letra.
+    Acepta A-Z (mayúscula o minúscula) y 'Todos' (case-insensitive).
+    Retorna el valor normalizado: letra en mayúscula o 'Todos'.
+    """
+    letra_upper = letra.strip().upper()
+
+    if letra_upper == "TODOS":
+        return "Todos"
+
+    if letra_upper in LETRAS_VALIDAS:
+        return letra_upper
+
+    raise HTTPException(
+        status_code=422,
+        detail=f"Parámetro 'letra' inválido: '{letra}'. Debe ser una letra A-Z o 'Todos'."
+    )
+
 
 @router.get("/export-users")
-def export_users(client_id: str = Query(...)):
+def export_users(
+    client_id: str = Query(...),
+    letra: str = Query(...),
+):
+    # --- Validar parámetro letra ---
+    letra_normalizada = _validar_letra(letra)
+
     # --- Paso 1: Obtener credenciales desde BD1 ---
     try:
         creds = get_db_credentials(client_id)
     except Exception as e:
-        # Fallo de infraestructura: BD1 caída, timeout, error de red, etc.
         logger.error(f"Error accediendo a BD1 para client_id={client_id}: {str(e)}")
         raise HTTPException(
             status_code=503,
             detail="Servicio temporalmente no disponible. No se pudo acceder a la configuración."
         )
 
-    # El cliente no existe en la tabla — no es un error de infraestructura
     if creds is None:
         raise HTTPException(
             status_code=404,
@@ -31,16 +57,14 @@ def export_users(client_id: str = Query(...)):
 
     # --- Paso 2: Generar reporte desde BD2 ---
     try:
-        excel_file = generate_users_report(creds)
+        excel_file = generate_users_report(creds, letra=letra_normalizada)
     except ValueError as e:
-        # Problema de esquema: columnas faltantes en tn_user_lst
         logger.error(f"Error de esquema en BD del cliente '{client_id}': {str(e)}")
         raise HTTPException(
             status_code=422,
             detail=f"La base de datos del cliente tiene un esquema inesperado: {str(e)}"
         )
     except Exception as e:
-        # Fallo de conexión o consulta a BD2
         logger.error(f"Error generando reporte para client_id={client_id}: {str(e)}")
         raise HTTPException(
             status_code=503,
@@ -48,7 +72,9 @@ def export_users(client_id: str = Query(...)):
         )
 
     # --- Paso 3: Retornar archivo ---
-    filename = f"reporte_usuarios_{client_id}.xlsx"
+    sufijo = letra_normalizada.lower() if letra_normalizada != "Todos" else "todos"
+    filename = f"reporte_usuarios_{client_id}_{sufijo}.xlsx"
+
     return StreamingResponse(
         excel_file,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
