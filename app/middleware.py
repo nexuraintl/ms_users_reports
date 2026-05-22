@@ -8,7 +8,7 @@ from app.services.auth_service import AuthService, TokenInvalidoError, TokenVeri
 logger = logging.getLogger(__name__)
 
 # Rutas que no requieren autenticación
-RUTAS_PUBLICAS = {"/health"}
+RUTAS_PUBLICAS = {"/health", "/docs", "/openapi.json", "/redoc"}
 
 
 class TokenAuthMiddleware(BaseHTTPMiddleware):
