@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Query, HTTPException
 from fastapi.responses import StreamingResponse
@@ -118,7 +119,9 @@ def export_audit(
             detail="No se pudo generar el reporte de auditoría. Error al conectar con la base de datos del cliente.",
         )
 
-    filename = f"auditoria_{client_id}_{fecha_inicio}_a_{fecha_fin}.xlsx"
+    desde = datetime.fromtimestamp(fecha_inicio, tz=timezone.utc).strftime("%Y-%m-%d")
+    hasta = datetime.fromtimestamp(fecha_fin, tz=timezone.utc).strftime("%Y-%m-%d")
+    filename = f"auditoria_{client_id}_{desde}_a_{hasta}.xlsx"
 
     return StreamingResponse(
         excel_file,
