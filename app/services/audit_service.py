@@ -9,7 +9,7 @@ from app.models.db_config import get_client_engine
 logger = logging.getLogger(__name__)
 
 # Ajustar a "s" si se confirma que date_ct almacena epoch en segundos
-DATE_CT_UNIT = "ms"
+DATE_CT_UNIT = "s"
 
 # Zona horaria del cliente — Colombia no aplica DST, es fija UTC-5
 CLIENT_TIMEZONE = "America/Bogota"
