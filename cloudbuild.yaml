@@ -1,0 +1,27 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:$COMMIT_SHA'
+      - '-t'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:latest'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME'
+
+images:
+  - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:$COMMIT_SHA'
+  - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:latest'
+
+substitutions:
+  _SERVICE_NAME: 'CAMBIAR-antes-de-usar'  # se sobreescribe vía --substitutions en el trigger (ticket2)
+
+options:
+  logging: CLOUD_LOGGING_ONLY
