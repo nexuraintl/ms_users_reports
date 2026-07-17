@@ -4,9 +4,9 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:$COMMIT_SHA'
+      - '${_AR_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:$COMMIT_SHA'
       - '-t'
-      - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:latest'
+      - '${_AR_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:latest'
       - '.'
 
   - name: 'gcr.io/cloud-builders/docker'
@@ -14,14 +14,15 @@ steps:
     args:
       - 'push'
       - '--all-tags'
-      - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME'
+      - '${_AR_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME'
 
 images:
-  - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:$COMMIT_SHA'
-  - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:latest'
+  - '${_AR_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:$COMMIT_SHA'
+  - '${_AR_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-images/$_SERVICE_NAME:latest'
 
 substitutions:
   _SERVICE_NAME: 'CAMBIAR-antes-de-usar'  # se sobreescribe vía --substitutions en el trigger (ticket2)
+  _AR_REGION: 'CAMBIAR-antes-de-usar'     # se sobreescribe vía --substitutions en el trigger (ticket2)
 
 options:
   logging: CLOUD_LOGGING_ONLY
